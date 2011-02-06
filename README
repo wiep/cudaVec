@@ -1,0 +1,131 @@
+Requirements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - CUDA-enabled device with an compute capability of 1.1 or higher
+  - device driver with cuda support
+  - CUDA Toolkit 3.0. Higher versions should also work.
+  - thrust v1.2 or higher. Available at http://code.google.com/p/thrust/
+  - gcc-4.3
+
+This library was only tested on Ubuntu 9.04 and Fedora 13
+
+
+
+Usage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The provides main.cpp and Makefile should give an idea of how the library is used.
+You may need to adapt the paths specified in the Makefile.
+Since cudaVec inherits thrust::device_vector cudaVec is fully compatible with thrust.
+You may want to use this possibilities. See therefor http://code.google.com/p/thrust/.
+
+
+Provided Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+unary functions to apply component-wisely on a cudaVec.
+
+  abs
+  sin
+  cos
+  tan
+  asin
+  acos
+  atan
+  sinh
+  cosh
+  tanh
+  asinh
+  acosh
+  atanh
+  sqrt
+  exp2
+  exp10
+  exp
+  log2
+  log10
+  log
+  trunc
+  floor
+  round
+  isNan
+  isInf
+  signBit
+
+
+binary operators to apply component-wisely on two cudaVecs or on a cudaVec and a scalar.
+
+  +
+  -
+  /
+  *
+  &&
+  ||
+  ==
+  !=
+  <
+  <=
+  >
+  >=
+
+
+binary functions to apply component-wisely on two cudaVecs or on a cudaVec and a scalar.
+
+  min
+  max
+  pow
+
+
+unary functions to apply on a cudaVec
+  sum
+  argmax - find the smallest index of a maximum magnitude element
+  argmin - find the smallest index pf a minimum magnitude element
+  norm2 - compute the Euclidean norm of a vector
+
+binary functions to apply on two cudaVec
+  dot - computes the dot product of two vectors
+
+a list of functions (maybe not complete) that are implemented in cuda but not yet in
+this library.
+
+  rsqrt
+  expm1
+  log1p
+  ldexp
+  logb
+  ilogb
+  rint
+  nearbyint
+  ceil
+  fdim
+  atan2
+  hypot
+  cbrt
+  rcbrt
+  sinpi
+  modf
+  fmod
+  remainder
+  remquo
+  erf
+  erfinv
+  erfc
+  erfcinv
+  tgamma
+  lgamma
+  copysignf
+  nextafterf
+  finitef
+
+
+
+TODO
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - cudaMatrix, template specialization for CUBLAS functions like
+    y = A * x + y and the like
+  - create filename for .cu/.ptx based on template parameters of
+    AssignmentExpression, so that earlier compiled .ptx files can be reused
+  - optimize generated kernels 
+  - implement missing cuda functions.
+  - the usage of template specialization to use cublas functions if possible could
+    speed up some calculations
