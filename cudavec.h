@@ -49,10 +49,6 @@ extern CUcontext cuContext;
 extern int maxThreadsPerBlock;
 extern int maxBlocksPerGrid;
 
-#ifdef REUSE_KERNELS
-bool file_exists(std::string filename);
-#endif
-
 template<class E>
 class AssignmentExpression;
 
@@ -323,7 +319,7 @@ std::string AssignmentExpression<E>::getCudaString() {
 	ss << "\t" << eval_line.str() << "\n";
 	ss << "}";
 
-	//Alternative schreibweise fuer den Kernel.
+	//alternative kernel code.
 	/*ss << "extern \"C\" __global__ void kernel( ";
 	ss << def_line.str() << ", unsigned int vector_size, unsigned int number_of_used_threads ) { \n";
 	ss << "\tfor(unsigned int idx = blockDim.x * blockIdx.x + threadIdx.x; ";
@@ -338,6 +334,8 @@ std::string AssignmentExpression<E>::getCudaString() {
 
 template<class E>
 int AssignmentExpression<E>::init() {
+	initCUDA();
+	CUresult result;
 	std::string cudaFunctionString = AssignmentExpression<E>::getCudaString();
 	int id = getNextKernelID();
 
@@ -360,9 +358,15 @@ int AssignmentExpression<E>::init() {
 
 	kernel_filename = ss.str();
 	kernel_comp_filename = kernel_filename.substr(0, kernel_filename.size() - 2) + "ptx";
+	// TODO if kernel_comp_filename exists and is not readable, or if either file is not writable, choose a different name
 
 #ifdef REUSE_KERNELS
-	if (!file_exists(kernel_comp_filename)) {
+	// try to load compiled cuda kernel
+	bool valid_kernel = (cuModuleLoad(&cuModule, kernel_comp_filename.c_str()) == CUDA_SUCCESS);
+	// TODO errors in ptx file can cause segfault at next cuModuleLoad()
+	valid_kernel &= (cuModuleGetFunction(&cuFunction, cuModule, "kernel") == CUDA_SUCCESS);
+	valid_kernel &= (cuModuleGetFunction(&cuFunction_small_vec, cuModule, "kernel_small_vec") == CUDA_SUCCESS);
+	if (!valid_kernel) {
 #endif
 
 #ifndef NDEBUG
@@ -386,19 +390,17 @@ int AssignmentExpression<E>::init() {
 		exit(1);
 	}
 
-#ifdef REUSE_KERNELS
-	}
-#endif
-
 	//load compiled cuda kernel
-	initCUDA();
-	CUresult result;
 	result = cuModuleLoad(&cuModule, kernel_comp_filename.c_str());
 	assert(result == CUDA_SUCCESS);
 	result =  cuModuleGetFunction(&cuFunction, cuModule, "kernel");
 	assert(result == CUDA_SUCCESS);
 	result =  cuModuleGetFunction(&cuFunction_small_vec, cuModule, "kernel_small_vec");
 	assert(result == CUDA_SUCCESS);
+
+#ifdef REUSE_KERNELS
+	}
+#endif
 	
 	return id;
 }
