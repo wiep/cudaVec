@@ -5,7 +5,7 @@
 
 // TODO cudaMatrix, template specialization for CUBLAS functions like y = A * x + y and the like
 // TODO create filename for .cu/.ptx based on template parameters of Assignment Expression, so that earlier compiled .ptx files can be reused
-// TODO optimzie generated kernels. 
+// TODO optimize generated kernels. 
 
 
 
