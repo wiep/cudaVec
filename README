@@ -7,7 +7,7 @@ Requirements
   - thrust v1.2 or higher. Available at http://code.google.com/p/thrust/
   - gcc-4.3
 
-This library was only tested on Ubuntu 9.04 and Fedora 13
+This library was only tested on Ubuntu 9.04/9.10 and Fedora 13
 
 
 
