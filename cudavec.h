@@ -4,7 +4,6 @@
 #define _CUDA_VECTOR_H_
 
 // TODO cudaMatrix, template specialization for CUBLAS functions like y = A * x + y and the like
-// TODO create filename for .cu/.ptx based on template parameters of Assignment Expression, so that earlier compiled .ptx files can be reused
 // TODO optimize generated kernels. 
 
 
@@ -28,7 +27,8 @@
 	(offset) = ((offset) + (alignment) - 1) & ~((alignment) - 1)
 #endif
 
-#include <stdlib.h>
+#include <sys/stat.h>
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <cassert>
@@ -48,6 +48,10 @@ extern CUdevice cuDevice;
 extern CUcontext cuContext;
 extern int maxThreadsPerBlock;
 extern int maxBlocksPerGrid;
+
+#ifdef REUSE_KERNELS
+bool file_exists(std::string filename);
+#endif
 
 template<class E>
 class AssignmentExpression;
@@ -98,6 +102,10 @@ public:
 	static void fillCudaStrings(char& current_var, std::stringstream& eval_line, std::stringstream& def_line) { 
 		def_line << "float* " << current_var;
 		eval_line << current_var++ << "[idx]";
+	}
+
+	static void fillName(std::stringstream& ss) {
+		ss << "_" << "cudaVec" << "_0";
 	}
 
 	void setCudaParam(CUfunction& cuFunction, int& offset) const { 
@@ -181,6 +189,7 @@ class AssignmentExpression {
 		cudaVec& _vec;
 		E const& _r;
 		static std::string getCudaString();
+		static std::string getName();
 		static int init();
 		
 
@@ -273,6 +282,15 @@ void AssignmentExpression<E>::eval() {
 }
 
 template<class E>
+std::string AssignmentExpression<E>::getName() {
+	std::stringstream ss;
+
+	E::fillName(ss);
+
+	return ss.str();
+}
+
+template<class E>
 std::string AssignmentExpression<E>::getCudaString() {
 	char &current_var = last_var;
 	std::stringstream eval_line, def_line;
@@ -327,6 +345,9 @@ int AssignmentExpression<E>::init() {
 	std::stringstream ss;
 	std::string kernel_filename, kernel_comp_filename;
 
+#ifdef REUSE_KERNELS
+	ss << CUDA_KERNEL_TMP_DIR << "/kernel_" << AssignmentExpression<E>::getName() << ".cu";
+#else
 	#ifdef NDEBUG
 		//get processId
 		pid_t pid = getpid();
@@ -335,10 +356,18 @@ int AssignmentExpression<E>::init() {
 	#else
 		ss << CUDA_KERNEL_TMP_DIR << "/cvk" << id << ".cu";
 	#endif
+#endif
 
 	kernel_filename = ss.str();
-	kernel_comp_filename = kernel_filename.substr(0, kernel_filename.size() - 2)
-	                       + "ptx";
+	kernel_comp_filename = kernel_filename.substr(0, kernel_filename.size() - 2) + "ptx";
+
+#ifdef REUSE_KERNELS
+	if (!file_exists(kernel_comp_filename)) {
+#endif
+
+#ifndef NDEBUG
+	std::cout << "Compiling " << kernel_filename << "..." << std::endl;
+#endif
 
 	//save cudaFuctionString in file.
 	std::ofstream kernel_file;
@@ -357,6 +386,9 @@ int AssignmentExpression<E>::init() {
 		exit(1);
 	}
 
+#ifdef REUSE_KERNELS
+	}
+#endif
 
 	//load compiled cuda kernel
 	initCUDA();
@@ -392,6 +424,11 @@ class CLASSNAME : public Expression<CLASSNAME<E> > { \
 			def_line << "float " << current_var++ << ", "; \
 			E::fillCudaStrings(current_var, eval_line, def_line); \
 			eval_line	<< ")"; \
+		} \
+ \
+		static void fillName(std::stringstream& ss) { \
+			ss << "_" << #CLASSNAME << "_1"; \
+			E::fillName(ss); \
 		} \
  \
 		void setCudaParam(CUfunction& cuFunction, int& offset) const { \
@@ -435,6 +472,11 @@ class CLASSNAME : public Expression<CLASSNAME<E> > { \
 			def_line << ", " << "float " << current_var++; \
 		} \
  \
+		static void fillName(std::stringstream& ss) { \
+			ss << "_" << #CLASSNAME << "_1"; \
+			E::fillName(ss); \
+		} \
+ \
 		void setCudaParam(CUfunction& cuFunction, int& offset) const { \
 			_l.setCudaParam(cuFunction, offset); \
 			\
@@ -475,6 +517,11 @@ class CLASSNAME : public Expression<CLASSNAME<E> > { \
 			eval_line	<< ")"; \
 		} \
  \
+		static void fillName(std::stringstream& ss) { \
+			ss << "_" << #CLASSNAME << "_1"; \
+			E::fillName(ss); \
+		} \
+ \
 		void setCudaParam(CUfunction& cuFunction, int& offset) const { \
 			 \
 			CUresult result; \
@@ -513,6 +560,11 @@ class CLASSNAME : public Expression<CLASSNAME<E> > { \
 			E::fillCudaStrings(current_var, eval_line, def_line); \
 			eval_line	<< ", " << current_var << ")"; \
 			def_line << ", float " << current_var++ ; \
+		} \
+ \
+		static void fillName(std::stringstream& ss) { \
+			ss << "_" << #CLASSNAME << "_1"; \
+			E::fillName(ss); \
 		} \
  \
 		void setCudaParam(CUfunction& cuFunction, int& offset) const { \
@@ -556,6 +608,12 @@ class CLASSNAME : public Expression<CLASSNAME<E1, E2> > { \
 			eval_line	<< ")"; \
 		} \
 \
+		static void fillName(std::stringstream& ss) { \
+			ss << "_" << #CLASSNAME << "_2"; \
+			E1::fillName(ss); \
+			E2::fillName(ss); \
+		} \
+ \
 		void setCudaParam(CUfunction& cuFunction, int& offset) const { \
 			_l.setCudaParam(cuFunction, offset); \
 			_r.setCudaParam(cuFunction, offset); \
@@ -593,6 +651,12 @@ class CLASSNAME : public Expression<CLASSNAME<E1, E2> > { \
 			eval_line	<< ")"; \
 		} \
 \
+		static void fillName(std::stringstream& ss) { \
+			ss << "_" << #CLASSNAME << "_2"; \
+			E1::fillName(ss); \
+			E2::fillName(ss); \
+		} \
+ \
 		void setCudaParam(CUfunction& cuFunction, int& offset) const { \
 			_l.setCudaParam(cuFunction, offset); \
 			_r.setCudaParam(cuFunction, offset); \
@@ -624,6 +688,11 @@ class CLASSNAME : public Expression<CLASSNAME<E> > { \
 			eval_line << CUDAFUNCTIONNAME << "(" ; \
 			E::fillCudaStrings(current_var, eval_line, def_line); \
 			eval_line	<< ")"; \
+		} \
+ \
+		static void fillName(std::stringstream& ss) { \
+			ss << "_" << #CLASSNAME << "_1"; \
+			E::fillName(ss); \
 		} \
  \
 		void setCudaParam(CUfunction& cuFunction, int& offset) const { \

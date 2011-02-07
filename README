@@ -123,8 +123,6 @@ TODO
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - cudaMatrix, template specialization for CUBLAS functions like
     y = A * x + y and the like
-  - create filename for .cu/.ptx based on template parameters of
-    AssignmentExpression, so that earlier compiled .ptx files can be reused
   - optimize generated kernels 
   - implement missing cuda functions.
   - the usage of template specialization to use cublas functions if possible could

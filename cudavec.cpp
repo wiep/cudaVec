@@ -47,6 +47,14 @@ int getNextKernelID() {
 	return kernel_couter++;
 }
 
+#ifdef REUSE_KERNELS
+bool file_exists(std::string filename) {
+	struct stat stFileInfo;
+	int result = stat(filename.c_str(), &stFileInfo);
+	return result == 0;
+}
+#endif
+
 CUdevice cuDevice;
 CUcontext cuContext;
 int maxThreadsPerBlock;
