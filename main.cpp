@@ -14,7 +14,7 @@ using namespace cudaVector;
         // set vector size
         const int n = 20;
 
-        // initilize host vectors
+        // initialize host vectors
         thrust::host_vector<float> h_vec_a(n);
         thrust::host_vector<float> h_vec_b(n);
         thrust::host_vector<float> h_vec_c(n);
@@ -24,7 +24,7 @@ using namespace cudaVector;
         //thrust::generate(h_vec_b.begin(), h_vec_b.end(), rand);
         //thrust::generate(h_vec_c.begin(), h_vec_c.end(), rand);
 
-        // genertate data on the host
+        // generate data on the host
         for (int i = 0; i < n; i++) {
             h_vec_a[i] = 0.1*i;
             h_vec_b[i] = 0.1*i;
@@ -36,7 +36,7 @@ using namespace cudaVector;
         cudaVec b(h_vec_b);
         cudaVec c(h_vec_c);
         
-        // some exressions. first ten elemets are displayed after each evaluation
+        // some expressions. first ten elements are displayed after each evaluation
         c = sin(a);
         std::cout << "c = sin(a)\n";
         for (int i = 0; i < 10 && i < n; ++i)
