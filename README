@@ -1,3 +1,9 @@
+The provided source code is a proof-of concept implementation of the
+techniques described in our paper CUDA Expression Templates. Please
+find the link to the paper on this website
+https://graphics.tu-bs.de/publications/wiemann2011cuda
+
+
 Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
